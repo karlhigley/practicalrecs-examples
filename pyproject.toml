@@ -6,7 +6,10 @@ authors = ["Karl Higley <kmhigley@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-torch = "~1.6.0"
+torch = "^1.7.0"
+pytorch-lightning = "^0.9.0"
+ranking-metrics-torch = "^0.2.3"
+torch-factorization-models = {path = "../torch-factorization-models"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
