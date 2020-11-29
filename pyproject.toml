@@ -8,8 +8,10 @@ authors = ["Karl Higley <kmhigley@gmail.com>"]
 python = "^3.8"
 torch = "^1.7.0"
 pytorch-lightning = "^0.9.0"
-ranking-metrics-torch = "^0.2.3"
+ranking-metrics-torch = "^0.3.0"
 torch-factorization-models = {path = "../torch-factorization-models"}
+tqdm = "^4.52.0"
+pybloomfiltermmap3 = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

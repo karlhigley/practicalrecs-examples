@@ -20,7 +20,7 @@ version = "1.4.4"
 [[package]]
 category = "dev"
 description = "Disable App Nap on OS X 10.9"
-marker = "python_version >= \"3.3\" and sys_platform == \"darwin\" or platform_system == \"Darwin\""
+marker = "sys_platform == \"darwin\" or platform_system == \"Darwin\" or python_version >= \"3.3\" and sys_platform == \"darwin\""
 name = "appnope"
 optional = false
 python-versions = "*"
@@ -90,7 +90,6 @@ tests_no_zope = ["coverage (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0
 [[package]]
 category = "dev"
 description = "Specifications for callback functions passed in to an API"
-marker = "python_version >= \"3.3\""
 name = "backcall"
 optional = false
 python-versions = "*"
@@ -214,7 +213,6 @@ version = "0.6"
 [[package]]
 category = "dev"
 description = "Decorators for Humans"
-marker = "python_version >= \"3.3\""
 name = "decorator"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*"
@@ -470,7 +468,6 @@ requirements_deprecated_finder = ["pipreqs", "pip-api"]
 [[package]]
 category = "dev"
 description = "An autocompletion tool for Python that can be used for text editors."
-marker = "python_version >= \"3.3\""
 name = "jedi"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
@@ -829,7 +826,6 @@ version = "1.4.3"
 [[package]]
 category = "dev"
 description = "A Python Parser"
-marker = "python_version >= \"3.3\""
 name = "parso"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
@@ -857,7 +853,7 @@ version = "0.1.2"
 [[package]]
 category = "dev"
 description = "Pexpect allows easy control of interactive console applications."
-marker = "python_version >= \"3.3\" and sys_platform != \"win32\""
+marker = "python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\""
 name = "pexpect"
 optional = false
 python-versions = "*"
@@ -869,7 +865,6 @@ ptyprocess = ">=0.5"
 [[package]]
 category = "dev"
 description = "Tiny 'shelve'-like database with concurrency support"
-marker = "python_version >= \"3.3\""
 name = "pickleshare"
 optional = false
 python-versions = "*"
@@ -963,7 +958,7 @@ test = ["ipaddress", "mock", "unittest2", "enum34", "pywin32", "wmi"]
 [[package]]
 category = "dev"
 description = "Run a subprocess in a pseudo terminal"
-marker = "python_version >= \"3.3\" and sys_platform != \"win32\" or os_name != \"nt\""
+marker = "python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\" or os_name != \"nt\" or python_version >= \"3.3\" and sys_platform != \"win32\" and (python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\")"
 name = "ptyprocess"
 optional = false
 python-versions = "*"
@@ -995,6 +990,14 @@ version = "0.2.8"
 
 [package.dependencies]
 pyasn1 = ">=0.4.6,<0.5.0"
+
+[[package]]
+category = "main"
+description = "A fast implementation of Bloom filter for Python 3 built on mmap"
+name = "pybloomfiltermmap3"
+optional = false
+python-versions = ">=3.5, <4"
+version = "0.5.3"
 
 [[package]]
 category = "dev"
@@ -1199,7 +1202,7 @@ description = "Common ranking metrics implemented with PyTorch"
 name = "ranking-metrics-torch"
 optional = false
 python-versions = ">=3.7,<4.0"
-version = "0.2.3"
+version = "0.3.0"
 
 [package.dependencies]
 torch = ">=1.5.0,<2.0.0"
@@ -1670,7 +1673,7 @@ python-versions = "*"
 version = "1.12.1"
 
 [metadata]
-content-hash = "d900ec89851c0bf6badd9d3b3d573e932988b6b3aa2bdb1acada3e18e180dddb"
+content-hash = "93b6c142d8afcdad38037a71adb03833a92798562a266399e44805ba93361dbe"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -2245,6 +2248,9 @@ pyasn1-modules = [
     {file = "pyasn1_modules-0.2.8-py3.6.egg", hash = "sha256:cbac4bc38d117f2a49aeedec4407d23e8866ea4ac27ff2cf7fb3e5b570df19e0"},
     {file = "pyasn1_modules-0.2.8-py3.7.egg", hash = "sha256:c29a5e5cc7a3f05926aff34e097e84f8589cd790ce0ed41b67aed6857b26aafd"},
 ]
+pybloomfiltermmap3 = [
+    {file = "pybloomfiltermmap3-0.5.3.tar.gz", hash = "sha256:7ead7f324100e5ea1495a38aeef10d573553da3ff1c37f520fd09cdc616ea070"},
+]
 pycodestyle = [
     {file = "pycodestyle-2.6.0-py2.py3-none-any.whl", hash = "sha256:2295e7b2f6b5bd100585ebcb1f616591b652db8a741695b3d8f5d28bdc934367"},
     {file = "pycodestyle-2.6.0.tar.gz", hash = "sha256:c58a7d2815e0e8d7972bf1803331fb0152f867bd89adf8a01dfd55085434192e"},
@@ -2363,8 +2369,8 @@ qtpy = [
     {file = "QtPy-1.9.0.tar.gz", hash = "sha256:2db72c44b55d0fe1407be8fba35c838ad0d6d3bb81f23007886dc1fc0f459c8d"},
 ]
 ranking-metrics-torch = [
-    {file = "ranking-metrics-torch-0.2.3.tar.gz", hash = "sha256:37dcf15fdd7ba3d9bd1e29a7acd0599bb265aeaa96bf0ad40c50f0e84df64cc6"},
-    {file = "ranking_metrics_torch-0.2.3-py3-none-any.whl", hash = "sha256:cb92900f2f84b358ce7c4e53a0e4c6c2d5ae4907d00375056d751f3f86b93190"},
+    {file = "ranking-metrics-torch-0.3.0.tar.gz", hash = "sha256:6356e9e97881ff92d9ca0cccca059e9ce3a9eece8bef39e7f9c1d32e919ef8f0"},
+    {file = "ranking_metrics_torch-0.3.0-py3-none-any.whl", hash = "sha256:109fa8e6922976d41e299d70c305195e2facbbc0fa7c2fff8b8fa592cc6d1e59"},
 ]
 regex = [
     {file = "regex-2020.11.13-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:8b882a78c320478b12ff024e81dc7d43c1462aa4a3341c754ee65d857a521f85"},
