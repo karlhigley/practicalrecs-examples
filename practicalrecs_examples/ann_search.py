@@ -32,10 +32,9 @@ class IdealizedANNSearch(RecsPipelineStage):
         padding_set = neighbor_set - eval_set
 
         ideal_indices = list(eval_set) + list(padding_set)
+        candidates = th.tensor(ideal_indices).flatten()
 
-        candidates = th.tensor(ideal_indices).flatten().unique()
-
-        user_recs.candidates = candidates
+        user_recs.candidates = candidates[: self.num_candidates]
         return user_recs
 
 
@@ -59,5 +58,5 @@ class ANNSearch(RecsPipelineStage):
             # TODO: Extract padding to a separate stage
             neighbors = th.randint(self.total_items, (num_candidates,))
 
-        user_recs.candidates = neighbors.flatten().unique()
+        user_recs.candidates = neighbors.flatten().unique()[: self.num_candidates]
         return user_recs
