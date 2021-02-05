@@ -6,9 +6,22 @@ from typing import Any
 import torch as th
 
 
-class RecsPipelineComponent:
-    def run(self):
-        raise NotImplementedError
+@dataclass
+class PipelineConfig:
+    num_items: int = None
+    num_candidates: int = None
+    num_recs: int = None
+
+
+@dataclass
+class PipelineArtifacts:
+    # model_name: str = None
+    # index_type: str = None
+    # filters_name: str = None
+
+    model: Any = None
+    index: Any = None
+    filters: Any = None
 
 
 # TODO: firm up the type annotations here
@@ -21,23 +34,48 @@ class UserRecs:
     candidates: Any = None
     scores: Any = None
 
+    def finalize(self):
+        # Clears out intermediate results and preps final results
+        self.user_embeddings = None
+        self.item_embeddings = None
+        self.candidates = self.candidates.cpu()
+        self.scores = self.scores.cpu()
+
+
+# TODO: Make this abstract
+class RecsPipelineComponent:
+    def run(self, user_recs, artifacts, config):
+        raise NotImplementedError
+
 
 class RecsPipeline:
-    def __init__(self, *components):
+    # Should know nothing about constructing stages
+    def __init__(self, *components, timing=False, caching=False):
         self.components = components
+        self.timing = timing
         self.timers = defaultdict(float)
+        self.caching = caching
+        self.cache = {}
 
-    def recommend(self, user_id, interacted_item_ids):
+    def recommend(self, user_id, interacted_item_ids, artifacts, config):
         user_recs = UserRecs(user_id=user_id, item_ids=interacted_item_ids)
 
         for component in self.components:
-            start = time.perf_counter()
-            user_recs = component.run(user_recs)
-            stop = time.perf_counter()
+            if self.timing:
+                start = time.perf_counter()
+                user_recs = component.run(user_recs, artifacts, config)
+                stop = time.perf_counter()
+                self.timers[type(component).__name__] += stop - start
+            else:
+                user_recs = component.run(user_recs, artifacts, config)
 
-            self.timers[type(component).__name__] += stop - start
+        scores = user_recs.scores
 
-        return user_recs.scores
+        if self.caching:
+            self.cache[user_recs.user_id] = user_recs.finalize()
+
+        # TODO: Change this to return the full recs
+        return scores
 
     def reset_timers(self):
         self.timers = defaultdict(float)
@@ -55,8 +93,12 @@ class RecsPipelineBuilder:
     def __init__(self, defaults=RecsPipelineStages()):
         self.defaults = defaults
 
-    def build(self, overrides=RecsPipelineStages()):
+    def build(self, overrides=None):
+        if overrides is None:
+            overrides = RecsPipelineStages()
+
         components = []
+        # TODO: Create an enumeration for stages
         for stage in ["retrieval", "filtering", "scoring", "ordering"]:
             override_components = getattr(overrides, stage)
             default_components = getattr(self.defaults, stage)

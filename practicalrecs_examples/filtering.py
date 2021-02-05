@@ -24,7 +24,7 @@ class IdealizedFilter(RecsPipelineComponent):
     def __init__(self, train_dataset):
         self.train_dataset = train_dataset
 
-    def run(self, user_recs):
+    def run(self, user_recs, artifacts, config):
         train_interactions = self.train_dataset[user_recs.user_id][
             "interactions"
         ].coalesce()
@@ -43,7 +43,7 @@ class BloomFilter(RecsPipelineComponent):
     def __init__(self, filters):
         self.filters = filters
 
-    def run(self, user_recs):
+    def run(self, user_recs, artifacts, config):
         bloom = self.filters[user_recs.user_id]
         filtered = list(filter(lambda c: c not in bloom, user_recs.candidates.numpy()))
 
@@ -52,20 +52,16 @@ class BloomFilter(RecsPipelineComponent):
 
 
 class CandidatePadding(RecsPipelineComponent):
-    def __init__(self, total_items, num_candidates):
-        self.total_items = total_items
-        self.num_candidates = num_candidates
-
-    def run(self, user_recs):
+    def run(self, user_recs, artifacts, config):
         candidates = th.tensor(user_recs.candidates, dtype=th.long)
 
         # Normalize number of scored candidates to num_candidates
-        if candidates.shape[0] > self.num_candidates:
-            candidates = candidates[: self.num_candidates]
-        elif candidates.shape[0] < self.num_candidates:
-            padding_size = self.num_candidates - candidates.shape[0]
+        if candidates.shape[0] > config.num_candidates:
+            candidates = candidates[: config.num_candidates]
+        elif candidates.shape[0] < config.num_candidates:
+            padding_size = config.num_candidates - candidates.shape[0]
             candidates = th.cat(
-                [candidates, th.randint(self.total_items, (padding_size,))]
+                [candidates, th.randint(config.num_items, (padding_size,))]
             )
 
         user_recs.candidates = candidates

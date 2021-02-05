@@ -8,9 +8,7 @@ from .pipeline import RecsPipelineComponent
 
 
 def load_model(path):
-    state_dict = th.load("../models/mf_example.pt")
-    del state_dict["preprocessor"]
-    state_dict["global_bias_idx"] = th.LongTensor([0])
+    state_dict = th.load(path)
 
     parser = ArgumentParser(add_help=False)
     parser = Trainer.add_argparse_args(parser)
@@ -20,9 +18,6 @@ def load_model(path):
     args.num_users = state_dict["user_embeddings.weight"].shape[0]
     args.num_items = state_dict["item_embeddings.weight"].shape[0]
     args.embedding_dim = state_dict["user_embeddings.weight"].shape[1]
-
-    # TODO: Move this elsewhere
-    args.eval_cutoff = th.tensor([100])
 
     model = ImplicitMatrixFactorization(args)
     model.load_state_dict(state_dict)
@@ -34,7 +29,7 @@ class UserEmbeddingFetcher(RecsPipelineComponent):
     def __init__(self, model):
         self.model = model
 
-    def run(self, user_recs):
+    def run(self, user_recs, artifacts, config):
         user_emb = self.model.user_embeddings.weight[user_recs.user_id]
 
         user_recs.user_embeddings = user_emb.unsqueeze(dim=0)
@@ -45,7 +40,7 @@ class ItemEmbeddingsFetcher(RecsPipelineComponent):
     def __init__(self, model):
         self.model = model
 
-    def run(self, user_recs):
+    def run(self, user_recs, artifacts, config):
         if len(user_recs.item_ids) > 0:
             item_embs = self.model.item_embeddings.weight[user_recs.item_ids]
         else:
@@ -61,7 +56,7 @@ class UserAvgEmbeddingFetcher(RecsPipelineComponent):
     def __init__(self, model):
         self.model = model
 
-    def run(self, user_recs):
+    def run(self, user_recs, artifacts, config):
         item_embs = self.model.item_embeddings.weight[user_recs.item_ids]
 
         user_recs.user_embeddings = th.mean(item_embs, dim=0).unsqueeze(dim=0)
@@ -72,7 +67,7 @@ class UseItemEmbeddingsAsUserEmbeddings(RecsPipelineComponent):
     def __init__(self, append=False):
         self.append = append
 
-    def run(self, user_recs):
+    def run(self, user_recs, artifacts, config):
         if self.append:
             user_recs.user_embeddings = th.cat(
                 [user_recs.user_embeddings, user_recs.item_embeddings]
@@ -87,7 +82,7 @@ class IdealizedMatrixFactorizationScoring(RecsPipelineComponent):
         self.model = model
         self.eval_dataset = eval_dataset
 
-    def run(self, user_recs):
+    def run(self, user_recs, artifacts, config):
         item_vectors = self.model.item_embeddings.weight.squeeze()
         item_biases = self.model.item_biases.weight.squeeze()
 
@@ -116,7 +111,8 @@ class MatrixFactorizationScoring(RecsPipelineComponent):
     def __init__(self, model):
         self.model = model
 
-    def run(self, user_recs):
+    def run(self, user_recs, artifacts, config):
+        # TODO: Extract some of this into the model class
         item_ids = user_recs.candidates
 
         item_vectors = self.model.item_embeddings.weight[item_ids].squeeze()
