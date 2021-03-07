@@ -1,25 +1,31 @@
 import faiss
 import numpy as np
 import torch as th
+from enum import Enum
 
 from .pipeline import RecsPipelineComponent, UserRecs
 
 
-def build_ann_index(item_vectors, embedding_dim, index_type, nprobe):
-    index = faiss.index_factory(embedding_dim, index_type, faiss.METRIC_INNER_PRODUCT)
+class IndexTypes(Enum):
+    EXACT = "exact"
+    APPROX = "approx"
+
+
+def build_ann_index(
+    item_vectors, index_type, nprobe=1, use_cuda=True, gpu_res=None, gpu_id=0
+):
+    if index_type == IndexTypes.EXACT:
+        index_str = "Flat"
+    else:
+        index_str = "IVF1024,PQ32"
+
+    embedding_dim = len(item_vectors[0])
+
+    index = faiss.index_factory(embedding_dim, index_str, faiss.METRIC_INNER_PRODUCT)
     index.nprobe = nprobe
 
     index.train(item_vectors)
     index.add(item_vectors)
-
-    return index
-
-
-def build_ann_index_for_model(
-    item_vectors, index_type, nprobe=1, use_cuda=True, gpu_res=None, gpu_id=0
-):
-    dim = len(item_vectors[0])
-    index = build_ann_index(item_vectors, dim, index_type, nprobe)
 
     if th.cuda.is_available() and use_cuda and gpu_res:
         cloner_options = faiss.GpuClonerOptions()
@@ -45,9 +51,8 @@ class RandomCandidates(RecsPipelineComponent):
 
 
 class IdealizedANNSearch(RecsPipelineComponent):
-    def __init__(self, eval_dataset, index, overfetch=1.2):
+    def __init__(self, eval_dataset, overfetch=1.2):
         self.eval_dataset = eval_dataset
-        self.index = index
         self.overfetch = overfetch
 
     def run(self, user_recs, artifacts, config):
@@ -59,8 +64,8 @@ class IdealizedANNSearch(RecsPipelineComponent):
         eval_item_ids = eval_interactions.indices()[1]
 
         if not user_recs.user_embeddings.isnan().any():
-            _, neighbor_indices = self.index.search(
-                np.array(user_recs.user_embeddings.cpu()), num_candidates
+            _, neighbor_indices = artifacts.index.search(
+                user_recs.user_embeddings.detach().cpu().numpy(), num_candidates
             )
         else:
             neighbor_indices = th.randint(config.num_items, (num_candidates,))
@@ -77,8 +82,7 @@ class IdealizedANNSearch(RecsPipelineComponent):
 
 
 class ANNSearch(RecsPipelineComponent):
-    def __init__(self, index, overfetch=1.2):
-        self.index = index
+    def __init__(self, overfetch=1.2):
         self.overfetch = overfetch
 
     def run(self, user_recs, artifacts, config):
@@ -89,7 +93,7 @@ class ANNSearch(RecsPipelineComponent):
             candidates_per = (
                 int(adj_num_candidates / user_recs.user_embeddings.shape[0]) + 1
             )
-            _, neighbor_indices = self.index.search(
+            _, neighbor_indices = artifacts.index.search(
                 user_recs.user_embeddings.cpu().detach().numpy(), candidates_per
             )
             neighbors = th.tensor(neighbor_indices).flatten().unique(sorted=False)

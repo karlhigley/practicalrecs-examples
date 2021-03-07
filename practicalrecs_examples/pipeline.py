@@ -1,9 +1,26 @@
 import time
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
 
 import torch as th
+
+
+class Stages(Enum):
+    RETRIEVAL = "retrieval"
+    FILTERING = "filtering"
+    SCORING = "scoring"
+    ORDERING = "ordering"
+
+
+@dataclass
+class RecsPipelineStages:
+    retrieval: list = None
+    filtering: list = None
+    scoring: list = None
+    ordering: list = None
 
 
 @dataclass
@@ -11,17 +28,6 @@ class PipelineConfig:
     num_items: int = None
     num_candidates: int = None
     num_recs: int = None
-
-
-@dataclass
-class PipelineArtifacts:
-    # model_name: str = None
-    # index_type: str = None
-    # filters_name: str = None
-
-    model: Any = None
-    index: Any = None
-    filters: Any = None
 
 
 # TODO: firm up the type annotations here
@@ -35,21 +41,20 @@ class UserRecs:
     scores: Any = None
 
     def finalize(self):
-        # Clears out intermediate results and preps final results
+        # Clears out intermediate results (to save space) and preps final results
         self.user_embeddings = None
         self.item_embeddings = None
         self.candidates = self.candidates.cpu()
         self.scores = self.scores.cpu()
 
 
-# TODO: Make this abstract
-class RecsPipelineComponent:
+class RecsPipelineComponent(ABC):
+    @abstractmethod
     def run(self, user_recs, artifacts, config):
         raise NotImplementedError
 
 
 class RecsPipeline:
-    # Should know nothing about constructing stages
     def __init__(self, *components, timing=False, caching=False):
         self.components = components
         self.timing = timing
@@ -69,27 +74,16 @@ class RecsPipeline:
             else:
                 user_recs = component.run(user_recs, artifacts, config)
 
-        scores = user_recs.scores
-
         if self.caching:
             self.cache[user_recs.user_id] = user_recs.finalize()
 
-        # TODO: Change this to return the full recs
-        return scores
+        return user_recs
 
     def reset_timers(self):
         self.timers = defaultdict(float)
 
 
-@dataclass
-class RecsPipelineStages:
-    retrieval: list = None
-    filtering: list = None
-    scoring: list = None
-    ordering: list = None
-
-
-class RecsPipelineBuilder:
+class RecsPipelineTemplate:
     def __init__(self, defaults=RecsPipelineStages()):
         self.defaults = defaults
 
@@ -98,8 +92,13 @@ class RecsPipelineBuilder:
             overrides = RecsPipelineStages()
 
         components = []
-        # TODO: Create an enumeration for stages
-        for stage in ["retrieval", "filtering", "scoring", "ordering"]:
+
+        for stage in [
+            Stages.RETRIEVAL,
+            Stages.FILTERING,
+            Stages.SCORING,
+            Stages.ORDERING,
+        ]:
             override_components = getattr(overrides, stage)
             default_components = getattr(self.defaults, stage)
             if override_components is not None:
@@ -108,3 +107,33 @@ class RecsPipelineBuilder:
                 components.extend(default_components)
 
         return RecsPipeline(*components)
+
+
+class PipelineRegistry:
+    def __init__(self):
+        self.pipelines = {}
+        self.templates = {}
+        self.stages = {}
+
+    def create_template(self, model_name, template_name, stages):
+        template = RecsPipelineTemplate(defaults=stages)
+
+        self.templates[template_name] = template
+
+        return template
+
+    def create_pipeline(self, pipeline_name, template_name=None, stages=None):
+        if template_name is None:
+            template_name = pipeline_name
+
+        if stages is not None:
+            self.stages[pipeline_name] = stages
+
+        template = self.templates[template_name]
+
+        pipeline = template.build(overrides=stages)
+
+        self.stages[pipeline_name] = stages
+        self.pipelines[pipeline_name] = pipeline
+
+        return pipeline

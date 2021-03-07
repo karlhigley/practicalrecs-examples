@@ -26,38 +26,29 @@ def load_model(path):
 
 
 class UserEmbeddingFetcher(RecsPipelineComponent):
-    def __init__(self, model):
-        self.model = model
-
     def run(self, user_recs, artifacts, config):
-        user_emb = self.model.user_embeddings.weight[user_recs.user_id]
+        user_emb = artifacts.model.user_embeddings.weight[user_recs.user_id]
 
         user_recs.user_embeddings = user_emb.unsqueeze(dim=0)
         return user_recs
 
 
 class ItemEmbeddingsFetcher(RecsPipelineComponent):
-    def __init__(self, model):
-        self.model = model
-
     def run(self, user_recs, artifacts, config):
         if len(user_recs.item_ids) > 0:
-            item_embs = self.model.item_embeddings.weight[user_recs.item_ids]
+            item_embs = artifacts.model.item_embeddings.weight[user_recs.item_ids]
         else:
-            total_items = self.model.item_embeddings.weight.shape[0]
+            total_items = artifacts.model.item_embeddings.weight.shape[0]
             item_ids = th.randint(total_items, (1,))
-            item_embs = self.model.item_embeddings.weight[item_ids]
+            item_embs = artifacts.model.item_embeddings.weight[item_ids]
 
         user_recs.item_embeddings = item_embs
         return user_recs
 
 
 class UserAvgEmbeddingFetcher(RecsPipelineComponent):
-    def __init__(self, model):
-        self.model = model
-
     def run(self, user_recs, artifacts, config):
-        item_embs = self.model.item_embeddings.weight[user_recs.item_ids]
+        item_embs = artifacts.model.item_embeddings.weight[user_recs.item_ids]
 
         user_recs.user_embeddings = th.mean(item_embs, dim=0).unsqueeze(dim=0)
         return user_recs
@@ -78,16 +69,15 @@ class UseItemEmbeddingsAsUserEmbeddings(RecsPipelineComponent):
 
 
 class IdealizedMatrixFactorizationScoring(RecsPipelineComponent):
-    def __init__(self, model, eval_dataset):
-        self.model = model
+    def __init__(self, eval_dataset):
         self.eval_dataset = eval_dataset
 
     def run(self, user_recs, artifacts, config):
-        item_vectors = self.model.item_embeddings.weight.squeeze()
-        item_biases = self.model.item_biases.weight.squeeze()
+        item_vectors = artifacts.model.item_embeddings.weight.squeeze()
+        item_biases = artifacts.model.item_biases.weight.squeeze()
 
         # TODO: Optimize to only score candidates
-        raw_scores = self.model._similarity_scores(
+        raw_scores = artifacts.model._similarity_scores(
             user_recs.user_embeddings, th.empty((1, 1)), item_vectors, item_biases
         ).flatten()
 
@@ -108,22 +98,21 @@ class IdealizedMatrixFactorizationScoring(RecsPipelineComponent):
 
 
 class MatrixFactorizationScoring(RecsPipelineComponent):
-    def __init__(self, model):
-        self.model = model
-
     def run(self, user_recs, artifacts, config):
         # TODO: Extract some of this into the model class
         item_ids = user_recs.candidates
 
-        item_vectors = self.model.item_embeddings.weight[item_ids].squeeze()
-        item_biases = self.model.item_biases.weight[item_ids].squeeze()
+        item_vectors = artifacts.model.item_embeddings.weight[item_ids].squeeze()
+        item_biases = artifacts.model.item_biases.weight[item_ids].squeeze()
 
-        scores = self.model._similarity_scores(
+        scores = artifacts.model._similarity_scores(
             user_recs.user_embeddings, th.empty((1, 1)), item_vectors, item_biases
         ).flatten()
 
         masked_scores = th.empty(
-            (self.model.hparams.num_items,), dtype=scores.dtype, device=scores.device
+            (artifacts.model.hparams.num_items,),
+            dtype=scores.dtype,
+            device=scores.device,
         ).fill_(-float("inf"))
         masked_scores[user_recs.candidates] = scores
 

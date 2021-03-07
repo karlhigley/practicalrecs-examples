@@ -40,11 +40,8 @@ class IdealizedFilter(RecsPipelineComponent):
 
 
 class BloomFilter(RecsPipelineComponent):
-    def __init__(self, filters):
-        self.filters = filters
-
     def run(self, user_recs, artifacts, config):
-        bloom = self.filters[user_recs.user_id]
+        bloom = artifacts.filters[user_recs.user_id]
         filtered = list(filter(lambda c: c not in bloom, user_recs.candidates.numpy()))
 
         user_recs.candidates = filtered
