@@ -13,7 +13,6 @@ metric_fns = {
 }
 
 
-# TODO: Move metrics caching into this class
 class MetricsCalculator:
     def __init__(self, to_compute=None):
         self.metrics = defaultdict(dict)
@@ -45,7 +44,9 @@ class MetricsCalculator:
 
         return metrics
 
-    def compute_metrics(self, prediction_fn, dataloader, list_cutoff):
+    def compute_metrics(
+        self, model_name, pipeline_name, prediction_fn, dataloader, list_cutoff
+    ):
         outputs = []
 
         list_cutoff = th.tensor([list_cutoff]).flatten()
@@ -74,5 +75,7 @@ class MetricsCalculator:
         #     "recall": recalls[~th.isnan(recalls)].mean(),
         #     "ndcg": ndcgs[~th.isnan(ndcgs)].mean(),
         # }
+
+        self.metrics[model_name][pipeline_name] = metrics
 
         return metrics

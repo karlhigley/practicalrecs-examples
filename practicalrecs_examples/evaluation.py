@@ -35,17 +35,16 @@ class EvaluationHarness:
         self.num_candidates = num_candidates
         self.num_recs = num_recs
 
-        # TODO: Extract dataloader stuff to a separate class?
-
     def evaluate_model(self, model_name, val_dataloader):
         model = self.artifacts.models[model_name]
 
         metrics = self.calculator.compute_metrics(
-            model.similarity_to_users, val_dataloader, self.num_recs
+            model_name,
+            "model",
+            model.similarity_to_users,
+            val_dataloader,
+            self.num_recs,
         )
-
-        # TODO: Move metrics caching into calculator
-        self.calculator.metrics[model_name]["model"] = metrics
 
         return metrics
 
@@ -84,13 +83,12 @@ class EvaluationHarness:
             return th.stack(user_scores)
 
         metrics = self.calculator.compute_metrics(
+            model,
+            pipeline,
             pipeline_predict,
             val,
             self.num_recs,
         )
-
-        # TODO: Move metrics caching into calculator
-        self.calculator.metrics[model][pipeline] = metrics
 
         return metrics
 
