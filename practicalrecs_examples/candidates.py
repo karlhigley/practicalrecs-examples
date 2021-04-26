@@ -100,8 +100,23 @@ class ANNSearch(RecsPipelineComponent):
             )
             neighbors = th.tensor(neighbor_indices).flatten().unique(sorted=False)
         else:
-            # TODO: Extract padding to a separate stage
-            neighbors = th.randint(config.num_items, (adj_num_candidates,))
+            neighbors = th.empty((0,))
 
         user_recs.candidates = neighbors[:adj_num_candidates]
+        return user_recs
+
+
+class CandidatePadding(RecsPipelineComponent):
+    def __init__(self, overfetch=1.0):
+        self.overfetch = overfetch
+
+    def run(self, user_recs, artifacts, config):
+        adj_num_candidates = int(self.overfetch * config.num_candidates)
+
+        padding_size = adj_num_candidates - len(user_recs.candidates)
+
+        if padding_size > 0:
+            padding_candidates = th.randint(config.num_items, (padding_size,))
+            user_recs.candidates = th.cat([user_recs.candidates, padding_candidates])
+
         return user_recs
