@@ -73,10 +73,12 @@ class IdealizedMatrixFactorizationScoring(RecsPipelineComponent):
         self.eval_dataset = eval_dataset
 
     def run(self, user_recs, artifacts, config):
-        item_vectors = artifacts.model.item_embeddings.weight.squeeze()
-        item_biases = artifacts.model.item_biases.weight.squeeze()
+        # TODO: Extract some of this into the model class
+        item_ids = user_recs.candidates
 
-        # TODO: Optimize to only score candidates
+        item_vectors = artifacts.model.item_embeddings.weight[item_ids].squeeze()
+        item_biases = artifacts.model.item_biases.weight[item_ids].squeeze()
+
         raw_scores = artifacts.model._similarity_scores(
             user_recs.user_embeddings, th.empty((1, 1)), item_vectors, item_biases
         ).flatten()
@@ -85,13 +87,12 @@ class IdealizedMatrixFactorizationScoring(RecsPipelineComponent):
             "interactions"
         ].coalesce()
         val_item_ids = val_interactions.indices()[1]
-        boosted_scores = raw_scores.clone().detach()
 
-        # TODO: Keep score distribution but rearrange item ids
-        boosted_scores[val_item_ids] += 10.0
+        masked_scores = th.zeros(config.num_items)
+        masked_scores = masked_scores[~item_ids].fill_(-float("inf"))
 
-        masked_scores = th.empty_like(boosted_scores).fill_(-float("inf"))
-        masked_scores[user_recs.candidates] = boosted_scores[user_recs.candidates]
+        masked_scores[item_ids] += raw_scores
+        masked_scores[val_item_ids] += 10.0
 
         user_recs.scores = masked_scores
         return user_recs
