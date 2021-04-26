@@ -30,15 +30,14 @@ class PipelineConfig:
     num_recs: int = None
 
 
-# TODO: firm up the type annotations here
 @dataclass
 class UserRecs:
     user_id: int = None
-    user_embeddings: Any = None
+    user_embeddings: th.Tensor = None
     item_ids: list = field(default_factory=list)
-    item_embeddings: Any = None
-    candidates: Any = None
-    scores: Any = None
+    item_embeddings: th.Tensor = None
+    candidates: th.Tensor = None
+    scores: th.Tensor = None
 
     def finalize(self):
         # Clears out intermediate results (to save space) and preps final results
