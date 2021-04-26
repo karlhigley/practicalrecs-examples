@@ -88,8 +88,10 @@ class ANNSearch(RecsPipelineComponent):
     def run(self, user_recs, artifacts, config):
         adj_num_candidates = int(self.overfetch * config.num_candidates)
 
-        # TODO: Filter out any embeddings containing nan, then check how many are left
-        if not user_recs.user_embeddings.isnan().any():
+        nan_indices = user_recs.user_embeddings.isnan().any(dim=1)
+        user_embeddings = user_recs.user_embeddings[~nan_indices]
+
+        if user_embeddings.shape[0] > 0:
             candidates_per = (
                 int(adj_num_candidates / user_recs.user_embeddings.shape[0]) + 1
             )
