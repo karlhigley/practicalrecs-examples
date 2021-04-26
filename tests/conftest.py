@@ -4,7 +4,7 @@ import faiss
 import numpy as np
 import pytest
 import torch as th
-from practicalrecs_examples.ann_search import ANNSearch, IdealizedANNSearch
+from practicalrecs_examples.candidates import ANNSearch, IdealizedANNSearch
 from practicalrecs_examples.pipeline import UserRecs
 from pytorch_lightning import Trainer, seed_everything
 from torch_factorization_models.implicit_mf import ImplicitMatrixFactorization

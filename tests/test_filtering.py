@@ -3,7 +3,7 @@ import numpy as np
 import pybloomfilter as pbf
 import torch as th
 from practicalrecs_examples.artifacts import ArtifactSet
-from practicalrecs_examples.ann_search import AllItemsAsCandidates
+from practicalrecs_examples.candidates import AllItemsAsCandidates
 from practicalrecs_examples.filtering import BloomFilter, IdealizedFilter
 from practicalrecs_examples.matrix_factorization import ItemEmbeddingsFetcher
 from practicalrecs_examples.pipeline import PipelineConfig, UserRecs

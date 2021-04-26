@@ -4,7 +4,7 @@ from typing import Any
 
 import faiss
 
-from practicalrecs_examples.ann_search import IndexTypes, build_ann_index
+from practicalrecs_examples.candidates import IndexTypes, build_ann_index
 from practicalrecs_examples.filtering import build_bloom_filters
 from practicalrecs_examples.matrix_factorization import load_model
 

@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import faiss
 import numpy as np
 import torch as th
-from practicalrecs_examples.ann_search import (
+from practicalrecs_examples.candidates import (
     AllItemsAsCandidates,
     ANNSearch,
     IdealizedANNSearch,

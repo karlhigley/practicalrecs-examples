@@ -4,7 +4,7 @@ import faiss
 import numpy as np
 import torch as th
 
-from practicalrecs_examples.ann_search import build_ann_index
+from practicalrecs_examples.candidates import build_ann_index
 from practicalrecs_examples.artifacts import ArtifactRegistry
 from practicalrecs_examples.filtering import build_bloom_filters
 from practicalrecs_examples.matrix_factorization import load_model
