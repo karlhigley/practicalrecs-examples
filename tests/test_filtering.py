@@ -2,10 +2,11 @@ import faiss
 import numpy as np
 import pybloomfilter as pbf
 import torch as th
-from practicalrecs_examples.ann_search import AllItems
+from practicalrecs_examples.artifacts import ArtifactSet
+from practicalrecs_examples.ann_search import AllItemsAsCandidates
 from practicalrecs_examples.filtering import BloomFilter, IdealizedFilter
 from practicalrecs_examples.matrix_factorization import ItemEmbeddingsFetcher
-from practicalrecs_examples.pipeline import UserRecs
+from practicalrecs_examples.pipeline import PipelineConfig, UserRecs
 from pytorch_lightning import Trainer, seed_everything
 from torch_factorization_models.implicit_mf import ImplicitMatrixFactorization
 from torch_factorization_models.movielens import MovielensDataModule
@@ -14,17 +15,20 @@ from torch_factorization_models.movielens import MovielensDataModule
 def test_idealized_filter_removes_training_set_items(trained_model, sim_eval_dataset):
     user_id = 0
 
-    all_items = AllItems(trained_model.hparams.num_items)
-    user_recs = all_items.run(UserRecs(user_id=user_id))
+    artifacts = ArtifactSet()
+    config = PipelineConfig(num_items=sim_eval_dataset.num_items)
+
+    all_items = AllItemsAsCandidates()
+    user_recs = all_items.run(UserRecs(user_id=user_id), artifacts, config)
 
     length_before = len(user_recs.candidates)
 
     stage = IdealizedFilter(sim_eval_dataset)
-    user_recs = stage.run(user_recs)
+    user_recs = stage.run(user_recs, artifacts, config)
 
     length_after = len(user_recs.candidates)
 
-    assert length_after > length_before
+    assert length_after < length_before
 
 
 def test_bloom_filter_removes_training_set_items(trained_model, sim_eval_dataset):
@@ -41,14 +45,19 @@ def test_bloom_filter_removes_training_set_items(trained_model, sim_eval_dataset
     bloom_filter = pbf.BloomFilter(100, 0.1)
     bloom_filter.update(item_ids)
 
-    all_items = AllItems(trained_model.hparams.num_items)
-    user_recs = all_items.run(UserRecs(user_id=user_id))
+    artifacts = ArtifactSet(filters={0: bloom_filter})
+    config = PipelineConfig(num_items=sim_eval_dataset.num_items)
+
+    all_items = AllItemsAsCandidates()
+    user_recs = all_items.run(
+        UserRecs(user_id=user_id), artifacts=artifacts, config=config
+    )
 
     length_before = len(user_recs.candidates)
 
-    stage = BloomFilter({0: bloom_filter})
-    user_recs = stage.run(user_recs)
+    stage = BloomFilter()
+    user_recs = stage.run(user_recs, artifacts, config)
 
     length_after = len(user_recs.candidates)
 
-    assert length_after > length_before
+    assert length_after < length_before
