@@ -34,7 +34,7 @@ def build_ann_index(
     return index
 
 
-class AllItems(RecsPipelineComponent):
+class AllItemsAsCandidates(RecsPipelineComponent):
     def run(self, user_recs, artifacts, config):
         neighbors = th.arange(0, config.num_items)
 
@@ -51,7 +51,7 @@ class RandomCandidates(RecsPipelineComponent):
 
 
 class IdealizedANNSearch(RecsPipelineComponent):
-    def __init__(self, eval_dataset, overfetch=1.2):
+    def __init__(self, eval_dataset, overfetch=1.0):
         self.eval_dataset = eval_dataset
         self.overfetch = overfetch
 
@@ -82,7 +82,7 @@ class IdealizedANNSearch(RecsPipelineComponent):
 
 
 class ANNSearch(RecsPipelineComponent):
-    def __init__(self, overfetch=1.2):
+    def __init__(self, overfetch=1.0):
         self.overfetch = overfetch
 
     def run(self, user_recs, artifacts, config):
