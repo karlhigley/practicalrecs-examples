@@ -61,20 +61,7 @@ class MetricsCalculator:
 
         for metric_name in self.to_compute:
             flattened = th.cat([batch[metric_name].flatten() for batch in outputs])
-            metrics[metric_name] = flattened
-
-        # TODO: Figure out how to add NaN filtering back in
-
-        # precisions = th.cat([batch["precision"].flatten() for batch in outputs])
-        # recalls = th.cat([batch["recall"].flatten() for batch in outputs])
-        # ndcgs = th.cat([batch["ndcg"].flatten() for batch in outputs])
-
-        # # Only include users that have relevant items in the average metrics
-        # metrics = {
-        #     "precision": precisions[~th.isnan(precisions)].mean(),
-        #     "recall": recalls[~th.isnan(recalls)].mean(),
-        #     "ndcg": ndcgs[~th.isnan(ndcgs)].mean(),
-        # }
+            metrics[metric_name] = flattened[~th.isnan(flattened)].mean()
 
         self.metrics[model_name][pipeline_name] = metrics
 
